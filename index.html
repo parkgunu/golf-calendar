@@ -88,21 +88,21 @@ const { useState, useEffect, useMemo, useCallback } = React;
 // ========================================
 const STORAGE_KEY = 'mom-golf-calendar-v1';
 const CITY_KEY = 'mom-golf-calendar-city-v1';
-const OWM_KEY = 'de07bc513674323ffa95528c29e2dd60';
 const START_YEAR = 2026;
 const START_MONTH = 8; // 0-index → 2026년 9월
 
+// q 는 저장된 값과의 호환을 위해 그대로 두고, 좌표만 덧붙였다
 const CITIES = [
-  { q: 'Seoul',     label: '서울' },
-  { q: 'Suwon',     label: '수원·경기' },
-  { q: 'Incheon',   label: '인천' },
-  { q: 'Chuncheon', label: '춘천·강원' },
-  { q: 'Cheonan',   label: '천안·충남' },
-  { q: 'Daejeon',   label: '대전' },
-  { q: 'Daegu',     label: '대구' },
-  { q: 'Gwangju',   label: '광주' },
-  { q: 'Busan',     label: '부산' },
-  { q: 'Jeju',      label: '제주' }
+  { q: 'Seoul',     label: '서울',      lat: 37.5665, lon: 126.9780 },
+  { q: 'Suwon',     label: '수원·경기',  lat: 37.2636, lon: 127.0286 },
+  { q: 'Incheon',   label: '인천',      lat: 37.4563, lon: 126.7052 },
+  { q: 'Chuncheon', label: '춘천·강원',  lat: 37.8813, lon: 127.7298 },
+  { q: 'Cheonan',   label: '천안·충남',  lat: 36.8151, lon: 127.1139 },
+  { q: 'Daejeon',   label: '대전',      lat: 36.3504, lon: 127.3845 },
+  { q: 'Daegu',     label: '대구',      lat: 35.8714, lon: 128.6014 },
+  { q: 'Gwangju',   label: '광주',      lat: 35.1595, lon: 126.8526 },
+  { q: 'Busan',     label: '부산',      lat: 35.1796, lon: 129.0756 },
+  { q: 'Jeju',      label: '제주',      lat: 33.4996, lon: 126.5312 }
 ];
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -123,35 +123,31 @@ function formatKoreanDate(key) {
 
 const cityLabelOf = (q) => { const c = CITIES.find((x) => x.q === q); return c ? c.label : ''; };
 
-// OpenWeather 의 한국어 번역이 '튼구름·온흐림·실 비' 처럼 어색해서 코드로 직접 붙인다
-function koWeather(id) {
-  if (id >= 200 && id < 300) return '천둥번개';
-  if (id >= 300 && id < 400) return '이슬비';
-  if (id >= 500 && id < 600) {
-    if (id === 500) return '약한 비';
-    if (id === 501) return '비';
-    if (id <= 504) return '강한 비';
-    if (id === 511) return '진눈깨비';
-    return '소나기';
-  }
-  if (id >= 600 && id < 700) {
-    if (id === 600) return '약한 눈';
-    if (id === 602) return '많은 눈';
-    if (id >= 611 && id <= 616) return '진눈깨비';
-    return '눈';
-  }
-  if (id >= 700 && id < 800) {
-    if (id === 711) return '연기';
-    if (id === 721) return '연무';
-    if (id === 731 || id === 751 || id === 761) return '흙먼지';
-    if (id === 771 || id === 781) return '돌풍';
-    return '안개';
-  }
-  if (id === 800) return '맑음';
-  if (id === 801) return '대체로 맑음';
-  if (id === 802) return '구름 조금';
-  if (id === 803) return '구름 많음';
-  return '흐림';
+// Open-Meteo 는 WMO 표준 코드를 준다. 아이콘과 한국어 표현을 여기서 함께 정한다
+function wmoWeather(code) {
+  if (code === 0)  return { label: '맑음',       icon: '01d' };
+  if (code === 1)  return { label: '대체로 맑음', icon: '02d' };
+  if (code === 2)  return { label: '구름 조금',   icon: '03d' };
+  if (code === 3)  return { label: '흐림',       icon: '04d' };
+  if (code === 45 || code === 48) return { label: '안개', icon: '50d' };
+  if (code === 51) return { label: '약한 이슬비', icon: '09d' };
+  if (code === 53) return { label: '이슬비',     icon: '09d' };
+  if (code === 55) return { label: '짙은 이슬비', icon: '09d' };
+  if (code === 56 || code === 57) return { label: '언 이슬비', icon: '09d' };
+  if (code === 61) return { label: '약한 비',    icon: '10d' };
+  if (code === 63) return { label: '비',        icon: '10d' };
+  if (code === 65) return { label: '강한 비',    icon: '09d' };
+  if (code === 66 || code === 67) return { label: '진눈깨비', icon: '09d' };
+  if (code === 71) return { label: '약한 눈',    icon: '13d' };
+  if (code === 73) return { label: '눈',        icon: '13d' };
+  if (code === 75) return { label: '많은 눈',    icon: '13d' };
+  if (code === 77) return { label: '싸락눈',     icon: '13d' };
+  if (code === 80 || code === 81) return { label: '소나기', icon: '09d' };
+  if (code === 82) return { label: '강한 소나기', icon: '09d' };
+  if (code === 85 || code === 86) return { label: '소나기눈', icon: '13d' };
+  if (code === 95) return { label: '천둥번개',   icon: '11d' };
+  if (code === 96 || code === 99) return { label: '우박·천둥번개', icon: '11d' };
+  return { label: '흐림', icon: '04d' };
 }
 
 function daysBetween(fromKey, toKey) {
@@ -297,7 +293,7 @@ function WeatherChip({ weather, cityLabel }) {
   return (
     <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm">
       <WeatherIcon code={weather.icon} size={22} />
-      <span className="text-[13px] font-semibold text-sand-100">{cityLabel} {Math.round(weather.max)}°</span>
+      <span className="text-[13px] font-semibold text-sand-100">{cityLabel} {Math.round(weather.now != null ? weather.now : weather.max)}°</span>
       <span className="text-[13px] text-sand-100/70">{weather.desc}</span>
     </div>
   );
@@ -464,35 +460,35 @@ function App() {
     try { localStorage.setItem(CITY_KEY, city); } catch (e) {}
   }, [city]);
 
-  // --- 날씨 불러오기 (OpenWeather 5일 / 3시간 예보) ---
+  // --- 날씨 불러오기 (Open-Meteo, API 키 불필요 · 16일 예보) ---
   useEffect(() => {
     let cancelled = false;
     setWeatherState('loading');
-    fetch('https://api.openweathermap.org/data/2.5/forecast?q=' + city + ',KR&units=metric&lang=kr&appid=' + OWM_KEY)
+    const spot = CITIES.find((c) => c.q === city) || CITIES[0];
+    const url = 'https://api.open-meteo.com/v1/forecast' +
+      '?latitude=' + spot.lat + '&longitude=' + spot.lon +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
+      '&current=temperature_2m,weather_code' +
+      '&timezone=auto&forecast_days=16';
+    fetch(url)
       .then((res) => { if (!res.ok) throw new Error('weather'); return res.json(); })
       .then((data) => {
         if (cancelled) return;
+        // daily.time 은 이미 현지 날짜(YYYY-MM-DD)라 시간대 변환이 필요 없다
+        const daily = data.daily || {};
         const byDate = {};
-        (data.list || []).forEach((item) => {
-          // dt_txt 는 UTC 다. 그대로 쓰면 날짜가 9시간 밀려 밤 예보가 그날 대표가 된다.
-          // dt(유닉스 시각)를 휴대폰 현지 시각으로 바꿔서 날짜와 시간을 잡는다.
-          const at = new Date(item.dt * 1000);
-          const key = ymd(at.getFullYear(), at.getMonth(), at.getDate());
-          const hour = at.getHours();
-          if (!byDate[key]) {
-            byDate[key] = { min: item.main.temp_min, max: item.main.temp_max, icon: '01d', desc: '', score: Infinity };
-          }
-          const slot = byDate[key];
-          slot.min = Math.min(slot.min, item.main.temp_min);
-          slot.max = Math.max(slot.max, item.main.temp_max);
-          // 낮(9~18시) 중 오후 1시에 가장 가까운 예보를 그날의 대표 날씨로 삼는다
-          const score = (hour >= 9 && hour <= 18 ? 0 : 100) + Math.abs(hour - 13);
-          if (score < slot.score) {
-            slot.score = score;
-            slot.icon = item.weather[0].icon.replace('n', 'd');
-            slot.desc = koWeather(item.weather[0].id);
-          }
+        (daily.time || []).forEach((key, i) => {
+          const w = wmoWeather(daily.weather_code[i]);
+          byDate[key] = {
+            max: daily.temperature_2m_max[i],
+            min: daily.temperature_2m_min[i],
+            icon: w.icon,
+            desc: w.label
+          };
         });
+        // 오늘 칸에는 지금 기온도 함께 담아 둔다
+        const t = todayKey();
+        if (data.current && byDate[t]) byDate[t].now = data.current.temperature_2m;
         setWeather(byDate);
         setWeatherState('ready');
       })
@@ -624,7 +620,7 @@ function App() {
           ))}
         </div>
 
-        <p className="mt-3 text-center text-[11px] leading-relaxed text-ink/40">날짜를 누르면 일정을 넣거나 고칠 수 있어요<br />날씨는 오늘부터 5일까지 표시돼요</p>
+        <p className="mt-3 text-center text-[11px] leading-relaxed text-ink/40">날짜를 누르면 일정을 넣거나 고칠 수 있어요<br />날씨는 오늘부터 16일까지 표시돼요</p>
       </Card>
 
       {/* ---------- 이 달의 일정 ---------- */}
@@ -645,7 +641,7 @@ function App() {
       </section>
 
       <p className="mt-6 px-2 text-center text-[11px] leading-relaxed text-sand-100/45">
-        입력한 일정은 이 휴대폰 브라우저에 저장돼요<br />날씨 자료 · OpenWeather
+        입력한 일정은 이 휴대폰 브라우저에 저장돼요<br />날씨 자료 · Open-Meteo
       </p>
 
       {/* ---------- 일정 입력 시트 ---------- */}
