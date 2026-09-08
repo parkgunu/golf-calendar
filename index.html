@@ -123,6 +123,37 @@ function formatKoreanDate(key) {
 
 const cityLabelOf = (q) => { const c = CITIES.find((x) => x.q === q); return c ? c.label : ''; };
 
+// OpenWeather 의 한국어 번역이 '튼구름·온흐림·실 비' 처럼 어색해서 코드로 직접 붙인다
+function koWeather(id) {
+  if (id >= 200 && id < 300) return '천둥번개';
+  if (id >= 300 && id < 400) return '이슬비';
+  if (id >= 500 && id < 600) {
+    if (id === 500) return '약한 비';
+    if (id === 501) return '비';
+    if (id <= 504) return '강한 비';
+    if (id === 511) return '진눈깨비';
+    return '소나기';
+  }
+  if (id >= 600 && id < 700) {
+    if (id === 600) return '약한 눈';
+    if (id === 602) return '많은 눈';
+    if (id >= 611 && id <= 616) return '진눈깨비';
+    return '눈';
+  }
+  if (id >= 700 && id < 800) {
+    if (id === 711) return '연기';
+    if (id === 721) return '연무';
+    if (id === 731 || id === 751 || id === 761) return '흙먼지';
+    if (id === 771 || id === 781) return '돌풍';
+    return '안개';
+  }
+  if (id === 800) return '맑음';
+  if (id === 801) return '대체로 맑음';
+  if (id === 802) return '구름 조금';
+  if (id === 803) return '구름 많음';
+  return '흐림';
+}
+
 function daysBetween(fromKey, toKey) {
   const a = new Date(fromKey + 'T00:00:00');
   const b = new Date(toKey + 'T00:00:00');
@@ -443,19 +474,23 @@ function App() {
         if (cancelled) return;
         const byDate = {};
         (data.list || []).forEach((item) => {
-          const key = item.dt_txt.slice(0, 10);
-          const hour = Number(item.dt_txt.slice(11, 13));
+          // dt_txt 는 UTC 다. 그대로 쓰면 날짜가 9시간 밀려 밤 예보가 그날 대표가 된다.
+          // dt(유닉스 시각)를 휴대폰 현지 시각으로 바꿔서 날짜와 시간을 잡는다.
+          const at = new Date(item.dt * 1000);
+          const key = ymd(at.getFullYear(), at.getMonth(), at.getDate());
+          const hour = at.getHours();
           if (!byDate[key]) {
-            byDate[key] = { min: item.main.temp_min, max: item.main.temp_max, icon: '01d', desc: '', bestGap: 99 };
+            byDate[key] = { min: item.main.temp_min, max: item.main.temp_max, icon: '01d', desc: '', score: Infinity };
           }
           const slot = byDate[key];
           slot.min = Math.min(slot.min, item.main.temp_min);
           slot.max = Math.max(slot.max, item.main.temp_max);
-          const gap = Math.abs(hour - 12);
-          if (gap < slot.bestGap) {
-            slot.bestGap = gap;
+          // 낮(9~18시) 중 오후 1시에 가장 가까운 예보를 그날의 대표 날씨로 삼는다
+          const score = (hour >= 9 && hour <= 18 ? 0 : 100) + Math.abs(hour - 13);
+          if (score < slot.score) {
+            slot.score = score;
             slot.icon = item.weather[0].icon.replace('n', 'd');
-            slot.desc = item.weather[0].description;
+            slot.desc = koWeather(item.weather[0].id);
           }
         });
         setWeather(byDate);
