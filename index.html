@@ -91,17 +91,25 @@ const CITY_KEY = 'mom-golf-calendar-city-v1';
 const START_YEAR = 2026;
 const START_MONTH = 8; // 0-index → 2026년 9월
 
-// q 는 저장된 값과의 호환을 위해 그대로 두고, 좌표만 덧붙였다
+// 17개 시·도 전체. 위에서 아래로(수도권 → 강원 → 충청 → 경상 → 전라 → 제주) 늘어놓아
+// 찾기 쉽게 했다. q 는 이미 저장된 값과의 호환을 위해 기존 것을 그대로 유지한다.
 const CITIES = [
   { q: 'Seoul',     label: '서울',      lat: 37.5665, lon: 126.9780 },
-  { q: 'Suwon',     label: '수원·경기',  lat: 37.2636, lon: 127.0286 },
   { q: 'Incheon',   label: '인천',      lat: 37.4563, lon: 126.7052 },
-  { q: 'Chuncheon', label: '춘천·강원',  lat: 37.8813, lon: 127.7298 },
-  { q: 'Cheonan',   label: '천안·충남',  lat: 36.8151, lon: 127.1139 },
+  { q: 'Suwon',     label: '경기·수원',  lat: 37.2636, lon: 127.0286 },
+  { q: 'Chuncheon', label: '강원·춘천',  lat: 37.8813, lon: 127.7298 },
+  { q: 'Cheongju',  label: '충북·청주',  lat: 36.6424, lon: 127.4890 },
+  { q: 'Cheonan',   label: '충남·천안',  lat: 36.8151, lon: 127.1139 },
   { q: 'Daejeon',   label: '대전',      lat: 36.3504, lon: 127.3845 },
+  { q: 'Sejong',    label: '세종',      lat: 36.4801, lon: 127.2890 },
+  { q: 'Andong',    label: '경북·안동',  lat: 36.5684, lon: 128.7294 },
   { q: 'Daegu',     label: '대구',      lat: 35.8714, lon: 128.6014 },
-  { q: 'Gwangju',   label: '광주',      lat: 35.1595, lon: 126.8526 },
+  { q: 'Ulsan',     label: '울산',      lat: 35.5384, lon: 129.3114 },
   { q: 'Busan',     label: '부산',      lat: 35.1796, lon: 129.0756 },
+  { q: 'Changwon',  label: '경남·창원',  lat: 35.2280, lon: 128.6811 },
+  { q: 'Jeonju',    label: '전북·전주',  lat: 35.8242, lon: 127.1480 },
+  { q: 'Gwangju',   label: '광주',      lat: 35.1595, lon: 126.8526 },
+  { q: 'Suncheon',  label: '전남·순천',  lat: 34.9506, lon: 127.4872 },
   { q: 'Jeju',      label: '제주',      lat: 33.4996, lon: 126.5312 }
 ];
 
